@@ -48,6 +48,10 @@ interface SfxOptions {
   readonly channels: number
 }
 
+interface StaticCompositionOptions {
+  readonly others: Array<Sfx>
+}
+
 const SAWTOOTH: OscillatorType = 'sawtooth'
 
 const normalizeIfNeeded = (samples: Float32Array): void => {
@@ -334,6 +338,26 @@ export class Sfx {
 
   static noise(options: SfxNoiseOptions): Sfx {
     return Sfx.create(renderNoise(options))
+  }
+
+  static concat({ others }: StaticCompositionOptions): Sfx {
+    const [first, ...rest] = others
+
+    if (first === undefined) {
+      throw new Error('Static concat requires at least one Sfx')
+    }
+
+    return rest.reduce((current, other) => current.concat({ other }), first)
+  }
+
+  static mix({ others }: StaticCompositionOptions): Sfx {
+    const [first, ...rest] = others
+
+    if (first === undefined) {
+      throw new Error('Static mix requires at least one Sfx')
+    }
+
+    return rest.reduce((current, other) => current.mix({ other }), first)
   }
 
   gain(options: GainOptions): Sfx {
