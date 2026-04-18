@@ -48,3 +48,24 @@ export interface SfxNoiseOptions {
   readonly seed?: number
   readonly type?: NoiseType
 }
+
+export interface GainOptions {
+  readonly db: number
+}
+
+export interface FadeOptions {
+  readonly ms: number
+}
+
+export interface SliceOptions {
+  readonly startMs: number
+  readonly endMs: number
+}
+
+export interface ResampleOptions {
+  readonly sampleRate: number
+}
+
+export interface SpeedOptions {
+  readonly rate: number
+}

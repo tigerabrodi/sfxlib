@@ -5,7 +5,7 @@ import {
   sine,
   square,
   triangle,
-  type Sfx,
+  Sfx,
   type NoiseType,
 } from '../../sfx/src/index'
 
@@ -164,6 +164,9 @@ app.insertAdjacentHTML(
           <button class="primitive-button" data-primitive="triangle">Play triangle</button>
           <button class="primitive-button" data-primitive="noise">Play noise</button>
         </div>
+        <div class="primitive-grid">
+          <button class="primitive-button" id="play-sequence">Play beep pause reverse</button>
+        </div>
         <p id="status" class="status">Ready.</p>
       </section>
     </div>
@@ -175,6 +178,8 @@ const durationInput = document.querySelector<HTMLInputElement>('#duration')
 const sampleRateInput = document.querySelector<HTMLInputElement>('#sample-rate')
 const noiseTypeInput = document.querySelector<HTMLSelectElement>('#noise-type')
 const seedInput = document.querySelector<HTMLInputElement>('#seed')
+const sequenceButton =
+  document.querySelector<HTMLButtonElement>('#play-sequence')
 const status = document.querySelector<HTMLParagraphElement>('#status')
 const buttons = Array.from(
   document.querySelectorAll<HTMLButtonElement>('[data-primitive]')
@@ -186,6 +191,7 @@ if (
   sampleRateInput === null ||
   noiseTypeInput === null ||
   seedInput === null ||
+  sequenceButton === null ||
   status === null
 ) {
   throw new Error('Missing playground controls')
@@ -262,6 +268,23 @@ const createPrimitive = (primitive: string): Sfx => {
   }
 }
 
+const createTransformSequence = (): Sfx => {
+  const sampleRate = readRequiredNumber(sampleRateInput)
+  const freq = readRequiredNumber(freqInput)
+  const beep = sine({
+    freq,
+    durationMs: 120,
+    sampleRate,
+  }).fadeOut({ ms: 24 })
+  const gap = Sfx.silence({
+    durationMs: 100,
+    sampleRate,
+    channels: 1,
+  })
+
+  return beep.concat({ other: gap }).concat({ other: beep.reverse() })
+}
+
 for (const button of buttons) {
   button.addEventListener('click', async () => {
     const primitive = button.dataset.primitive
@@ -287,3 +310,18 @@ for (const button of buttons) {
     }
   })
 }
+
+sequenceButton.addEventListener('click', async () => {
+  try {
+    status.textContent = 'Rendering transform sequence.'
+
+    const sfx = createTransformSequence()
+
+    await playSfx(sfx)
+
+    status.textContent = 'Played beep. pause. reverse beep.'
+  } catch (error) {
+    status.textContent =
+      error instanceof Error ? error.message : 'Something went wrong.'
+  }
+})

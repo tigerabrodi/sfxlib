@@ -1,14 +1,28 @@
 import { configure, createOfflineContext, getSharedContext } from './context'
 import { createRng } from './rng'
 import { clamp, msToSamples } from './utils'
+import { toMonoBuffer, toStereoBuffer } from './transforms/channels'
+import { concatBuffers } from './transforms/concat'
+import { applyFadeIn, applyFadeOut } from './transforms/fade'
+import { applyGain } from './transforms/gain'
+import { mixBuffers } from './transforms/mix'
+import { resampleBuffer } from './transforms/resample'
+import { reverseBuffer } from './transforms/reverse'
+import { sliceBuffer } from './transforms/slice'
+import { changeSpeed } from './transforms/speed'
 import type {
   ConfigureOptions,
+  FadeOptions,
+  GainOptions,
   NoiseType,
+  ResampleOptions,
   SfxFromBufferOptions,
   SfxFromChannelsOptions,
   SfxNoiseOptions,
   SfxOscillatorOptions,
   SfxSilenceOptions,
+  SliceOptions,
+  SpeedOptions,
 } from './types'
 
 interface SfxOptions {
@@ -214,6 +228,35 @@ export class Sfx {
     return new Sfx(options)
   }
 
+  #frameCount(): number {
+    return Math.max(1, Math.round(this.#duration * this.#sampleRate))
+  }
+
+  #derive(
+    bufferPromise: Promise<AudioBuffer>,
+    {
+      duration = this.#duration,
+      sampleRate = this.#sampleRate,
+      channels = this.#channels,
+    }: Partial<Omit<SfxOptions, 'bufferPromise'>> = {}
+  ): Sfx {
+    return Sfx.create({
+      bufferPromise,
+      duration,
+      sampleRate,
+      channels,
+    })
+  }
+
+  #assertMatchingFormat(other: Sfx): void {
+    if (
+      this.#sampleRate !== other.#sampleRate ||
+      this.#channels !== other.#channels
+    ) {
+      throw new Error('Sample rate and channel count must match')
+    }
+  }
+
   static configure(options: ConfigureOptions): void {
     configure(options)
   }
@@ -275,6 +318,114 @@ export class Sfx {
 
   static noise(options: SfxNoiseOptions): Sfx {
     return Sfx.create(renderNoise(options))
+  }
+
+  gain(options: GainOptions): Sfx {
+    return this.#derive(
+      this.#bufferPromise.then((buffer) => applyGain(buffer, options))
+    )
+  }
+
+  fadeIn(options: FadeOptions): Sfx {
+    return this.#derive(
+      this.#bufferPromise.then((buffer) => applyFadeIn(buffer, options))
+    )
+  }
+
+  fadeOut(options: FadeOptions): Sfx {
+    return this.#derive(
+      this.#bufferPromise.then((buffer) => applyFadeOut(buffer, options))
+    )
+  }
+
+  reverse(): Sfx {
+    return this.#derive(
+      this.#bufferPromise.then((buffer) => reverseBuffer(buffer))
+    )
+  }
+
+  slice(options: SliceOptions): Sfx {
+    const startSample = clamp(
+      msToSamples(options.startMs, this.#sampleRate),
+      0,
+      this.#frameCount()
+    )
+    const endSample = clamp(
+      msToSamples(options.endMs, this.#sampleRate),
+      startSample,
+      this.#frameCount()
+    )
+    const length = Math.max(1, endSample - startSample)
+
+    return this.#derive(
+      this.#bufferPromise.then((buffer) => sliceBuffer(buffer, options)),
+      { duration: length / this.#sampleRate }
+    )
+  }
+
+  concat({ other }: { other: Sfx }): Sfx {
+    this.#assertMatchingFormat(other)
+
+    const length = this.#frameCount() + other.#frameCount()
+
+    return this.#derive(
+      Promise.all([this.#bufferPromise, other.#bufferPromise]).then(
+        ([first, second]) => concatBuffers(first, second)
+      ),
+      { duration: length / this.#sampleRate }
+    )
+  }
+
+  mix({ other }: { other: Sfx }): Sfx {
+    this.#assertMatchingFormat(other)
+
+    const length = Math.max(this.#frameCount(), other.#frameCount())
+
+    return this.#derive(
+      Promise.all([this.#bufferPromise, other.#bufferPromise]).then(
+        ([first, second]) => mixBuffers(first, second)
+      ),
+      { duration: length / this.#sampleRate }
+    )
+  }
+
+  resample(options: ResampleOptions): Sfx {
+    const length = Math.max(1, Math.round(this.#duration * options.sampleRate))
+
+    return this.#derive(
+      this.#bufferPromise.then((buffer) => resampleBuffer(buffer, options)),
+      {
+        duration: length / options.sampleRate,
+        sampleRate: options.sampleRate,
+      }
+    )
+  }
+
+  toMono(): Sfx {
+    return this.#derive(
+      this.#bufferPromise.then((buffer) => toMonoBuffer(buffer)),
+      {
+        channels: 1,
+      }
+    )
+  }
+
+  toStereo(): Sfx {
+    return this.#derive(
+      this.#bufferPromise.then((buffer) => toStereoBuffer(buffer)),
+      {
+        channels: 2,
+      }
+    )
+  }
+
+  speed(options: SpeedOptions): Sfx {
+    const length = Math.max(1, Math.round(this.#frameCount() / options.rate))
+
+    return this.#derive(
+      this.#bufferPromise.then((buffer) => changeSpeed(buffer, options)),
+      { duration: length / this.#sampleRate }
+    )
   }
 
   get duration(): number {

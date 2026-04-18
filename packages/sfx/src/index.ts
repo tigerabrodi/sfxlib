@@ -6,13 +6,18 @@ export { createJitter, createRng } from './rng'
 export type {
   ConfigureOptions,
   CreateOfflineContextOptions,
+  FadeOptions,
+  GainOptions,
   JitterOptions,
   NoiseType,
+  ResampleOptions,
   SfxFromBufferOptions,
   SfxFromChannelsOptions,
   SfxNoiseOptions,
   SfxOscillatorOptions,
   SfxSilenceOptions,
+  SliceOptions,
+  SpeedOptions,
   WavData,
 } from './types'
 export {
