@@ -33,3 +33,18 @@ export interface SfxSilenceOptions {
   readonly sampleRate?: number
   readonly channels?: number
 }
+
+export interface SfxOscillatorOptions {
+  readonly freq: number
+  readonly durationMs: number
+  readonly sampleRate?: number
+}
+
+export type NoiseType = 'white' | 'pink' | 'brown'
+
+export interface SfxNoiseOptions {
+  readonly durationMs: number
+  readonly sampleRate?: number
+  readonly seed?: number
+  readonly type?: NoiseType
+}
