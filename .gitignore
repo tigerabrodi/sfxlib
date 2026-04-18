@@ -1,0 +1,48 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+build
+
+# TypeScript
+*.tsbuildinfo
+.tsbuildinfo
+
+# Vite / Vitest caches
+.vite
+.cache
+
+# Test artifacts
+coverage
+**/tests/_output
+playwright-report
+test-results
+.vitest-cache
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temp
+*.tmp
+.tmp
