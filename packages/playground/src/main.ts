@@ -166,6 +166,7 @@ app.insertAdjacentHTML(
         </div>
         <div class="primitive-grid">
           <button class="primitive-button" id="play-sequence">Play beep pause reverse</button>
+          <button class="primitive-button" id="play-laser">Play laser chain</button>
         </div>
         <p id="status" class="status">Ready.</p>
       </section>
@@ -180,6 +181,7 @@ const noiseTypeInput = document.querySelector<HTMLSelectElement>('#noise-type')
 const seedInput = document.querySelector<HTMLInputElement>('#seed')
 const sequenceButton =
   document.querySelector<HTMLButtonElement>('#play-sequence')
+const laserButton = document.querySelector<HTMLButtonElement>('#play-laser')
 const status = document.querySelector<HTMLParagraphElement>('#status')
 const buttons = Array.from(
   document.querySelectorAll<HTMLButtonElement>('[data-primitive]')
@@ -192,6 +194,7 @@ if (
   noiseTypeInput === null ||
   seedInput === null ||
   sequenceButton === null ||
+  laserButton === null ||
   status === null
 ) {
   throw new Error('Missing playground controls')
@@ -285,6 +288,25 @@ const createTransformSequence = (): Sfx => {
   return beep.concat({ other: gap }).concat({ other: beep.reverse() })
 }
 
+const createLaserChain = (): Sfx => {
+  const sampleRate = readRequiredNumber(sampleRateInput)
+  const baseFreq = Math.max(200, readRequiredNumber(freqInput))
+
+  return sine({
+    freq: baseFreq * 2,
+    durationMs: 150,
+    sampleRate,
+  })
+    .pitch({ semitones: -8 })
+    .envelope({
+      attackMs: 2,
+      decayMs: 35,
+      sustain: 0.18,
+      releaseMs: 90,
+    })
+    .lowpass({ cutoff: 2_000, q: 1.5 })
+}
+
 for (const button of buttons) {
   button.addEventListener('click', async () => {
     const primitive = button.dataset.primitive
@@ -320,6 +342,21 @@ sequenceButton.addEventListener('click', async () => {
     await playSfx(sfx)
 
     status.textContent = 'Played beep. pause. reverse beep.'
+  } catch (error) {
+    status.textContent =
+      error instanceof Error ? error.message : 'Something went wrong.'
+  }
+})
+
+laserButton.addEventListener('click', async () => {
+  try {
+    status.textContent = 'Rendering laser chain.'
+
+    const sfx = createLaserChain()
+
+    await playSfx(sfx)
+
+    status.textContent = 'Played the laser chain.'
   } catch (error) {
     status.textContent =
       error instanceof Error ? error.message : 'Something went wrong.'

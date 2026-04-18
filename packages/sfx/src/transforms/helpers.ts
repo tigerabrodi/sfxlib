@@ -41,3 +41,30 @@ export const assertMatchingBufferFormat = (
     throw new Error('Sample rate and channel count must match')
   }
 }
+
+export const renderBufferThroughGraph = async (
+  buffer: AudioBuffer,
+  {
+    length = buffer.length,
+    sampleRate = buffer.sampleRate,
+    channels = buffer.numberOfChannels,
+    buildGraph,
+  }: {
+    length?: number
+    sampleRate?: number
+    channels?: number
+    buildGraph: (
+      context: OfflineAudioContext,
+      source: AudioBufferSourceNode
+    ) => void
+  }
+): Promise<AudioBuffer> => {
+  const context = new OfflineAudioContext(channels, length, sampleRate)
+  const source = context.createBufferSource()
+
+  source.buffer = buffer
+  buildGraph(context, source)
+  source.start(0)
+
+  return context.startRendering()
+}

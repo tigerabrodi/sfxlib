@@ -69,3 +69,35 @@ export interface ResampleOptions {
 export interface SpeedOptions {
   readonly rate: number
 }
+
+export interface EnvelopeOptions {
+  readonly attackMs: number
+  readonly decayMs: number
+  readonly sustain: number
+  readonly releaseMs: number
+}
+
+export interface FilterOptions {
+  readonly cutoff: number
+  readonly q?: number
+}
+
+export interface PitchOptions {
+  readonly semitones: number
+}
+
+export interface DelayOptions {
+  readonly timeMs: number
+  readonly feedback: number
+  readonly wet?: number
+}
+
+export interface ReverbOptions {
+  readonly durationMs?: number
+  readonly decay?: number
+  readonly wet?: number
+}
+
+export interface DistortionOptions {
+  readonly amount: number
+}

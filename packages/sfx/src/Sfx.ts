@@ -1,21 +1,37 @@
 import { configure, createOfflineContext, getSharedContext } from './context'
 import { createRng } from './rng'
-import { clamp, msToSamples } from './utils'
+import { clamp, msToSamples, semitonesToRatio } from './utils'
 import { toMonoBuffer, toStereoBuffer } from './transforms/channels'
 import { concatBuffers } from './transforms/concat'
+import { applyDelay, estimateDelayDurationSeconds } from './transforms/delay'
+import { applyDistortion } from './transforms/distortion'
+import { applyEnvelope } from './transforms/envelope'
 import { applyFadeIn, applyFadeOut } from './transforms/fade'
+import {
+  applyBandpass,
+  applyHighpass,
+  applyLowpass,
+} from './transforms/filters'
 import { applyGain } from './transforms/gain'
 import { mixBuffers } from './transforms/mix'
+import { applyPitch } from './transforms/pitch'
 import { resampleBuffer } from './transforms/resample'
+import { applyReverb, estimateReverbDurationSeconds } from './transforms/reverb'
 import { reverseBuffer } from './transforms/reverse'
 import { sliceBuffer } from './transforms/slice'
 import { changeSpeed } from './transforms/speed'
 import type {
   ConfigureOptions,
+  DelayOptions,
+  DistortionOptions,
+  EnvelopeOptions,
   FadeOptions,
+  FilterOptions,
   GainOptions,
   NoiseType,
+  PitchOptions,
   ResampleOptions,
+  ReverbOptions,
   SfxFromBufferOptions,
   SfxFromChannelsOptions,
   SfxNoiseOptions,
@@ -425,6 +441,64 @@ export class Sfx {
     return this.#derive(
       this.#bufferPromise.then((buffer) => changeSpeed(buffer, options)),
       { duration: length / this.#sampleRate }
+    )
+  }
+
+  envelope(options: EnvelopeOptions): Sfx {
+    return this.#derive(
+      this.#bufferPromise.then((buffer) => applyEnvelope(buffer, options))
+    )
+  }
+
+  lowpass(options: FilterOptions): Sfx {
+    return this.#derive(
+      this.#bufferPromise.then((buffer) => applyLowpass(buffer, options))
+    )
+  }
+
+  highpass(options: FilterOptions): Sfx {
+    return this.#derive(
+      this.#bufferPromise.then((buffer) => applyHighpass(buffer, options))
+    )
+  }
+
+  bandpass(options: FilterOptions): Sfx {
+    return this.#derive(
+      this.#bufferPromise.then((buffer) => applyBandpass(buffer, options))
+    )
+  }
+
+  pitch(options: PitchOptions): Sfx {
+    const ratio = semitonesToRatio(options.semitones)
+    const length = Math.max(1, Math.round(this.#frameCount() / ratio))
+
+    return this.#derive(
+      this.#bufferPromise.then((buffer) => applyPitch(buffer, options)),
+      { duration: length / this.#sampleRate }
+    )
+  }
+
+  delay(options: DelayOptions): Sfx {
+    const duration = estimateDelayDurationSeconds(this.#duration, options)
+
+    return this.#derive(
+      this.#bufferPromise.then((buffer) => applyDelay(buffer, options)),
+      { duration }
+    )
+  }
+
+  reverb(options: ReverbOptions): Sfx {
+    const duration = estimateReverbDurationSeconds(this.#duration, options)
+
+    return this.#derive(
+      this.#bufferPromise.then((buffer) => applyReverb(buffer, options)),
+      { duration }
+    )
+  }
+
+  distortion(options: DistortionOptions): Sfx {
+    return this.#derive(
+      this.#bufferPromise.then((buffer) => applyDistortion(buffer, options))
     )
   }
 
