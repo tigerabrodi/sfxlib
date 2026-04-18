@@ -1,4 +1,13 @@
 import { configure, createOfflineContext, getSharedContext } from './context'
+import { createCoinPickup } from './factories/helpers/coinPickup'
+import { createExplosion } from './factories/helpers/explosion'
+import { createFootstep } from './factories/helpers/footstep'
+import { createGunshot } from './factories/helpers/gunshot'
+import { createHit } from './factories/helpers/hit'
+import { createJump } from './factories/helpers/jump'
+import { createLaserShot } from './factories/helpers/laserShot'
+import { createPowerUp } from './factories/helpers/powerUp'
+import type { HelperSfxApi } from './factories/helpers/_variation'
 import { createRng } from './rng'
 import { clamp, msToSamples, semitonesToRatio } from './utils'
 import { toMonoBuffer, toStereoBuffer } from './transforms/channels'
@@ -21,15 +30,23 @@ import { reverseBuffer } from './transforms/reverse'
 import { sliceBuffer } from './transforms/slice'
 import { changeSpeed } from './transforms/speed'
 import type {
+  CoinPickupOptions,
   ConfigureOptions,
   DelayOptions,
   DistortionOptions,
   EnvelopeOptions,
+  ExplosionOptions,
   FadeOptions,
   FilterOptions,
+  FootstepOptions,
   GainOptions,
+  GunshotOptions,
+  HitOptions,
+  JumpOptions,
   NoiseType,
+  LaserShotOptions,
   PitchOptions,
+  PowerUpOptions,
   ResampleOptions,
   ReverbOptions,
   SfxFromBufferOptions,
@@ -224,6 +241,17 @@ const renderNoise = ({
   }
 }
 
+const createHelperApi = (): HelperSfxApi => ({
+  sine: (options) => Sfx.sine(options),
+  square: (options) => Sfx.square(options),
+  saw: (options) => Sfx.saw(options),
+  triangle: (options) => Sfx.triangle(options),
+  noise: (options) => Sfx.noise(options),
+  silence: (options) => Sfx.silence(options),
+  mix: (others) => Sfx.mix({ others }),
+  concat: (others) => Sfx.concat({ others }),
+})
+
 export class Sfx {
   readonly #bufferPromise: Promise<AudioBuffer>
   readonly #duration: number
@@ -338,6 +366,38 @@ export class Sfx {
 
   static noise(options: SfxNoiseOptions): Sfx {
     return Sfx.create(renderNoise(options))
+  }
+
+  static gunshot(options: GunshotOptions = {}): Sfx {
+    return createGunshot(createHelperApi(), options)
+  }
+
+  static explosion(options: ExplosionOptions = {}): Sfx {
+    return createExplosion(createHelperApi(), options)
+  }
+
+  static coinPickup(options: CoinPickupOptions = {}): Sfx {
+    return createCoinPickup(createHelperApi(), options)
+  }
+
+  static laserShot(options: LaserShotOptions = {}): Sfx {
+    return createLaserShot(createHelperApi(), options)
+  }
+
+  static jump(options: JumpOptions = {}): Sfx {
+    return createJump(createHelperApi(), options)
+  }
+
+  static hit(options: HitOptions = {}): Sfx {
+    return createHit(createHelperApi(), options)
+  }
+
+  static footstep(options: FootstepOptions = {}): Sfx {
+    return createFootstep(createHelperApi(), options)
+  }
+
+  static powerUp(options: PowerUpOptions = {}): Sfx {
+    return createPowerUp(createHelperApi(), options)
   }
 
   static concat({ others }: StaticCompositionOptions): Sfx {

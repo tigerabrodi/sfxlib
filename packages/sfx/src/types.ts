@@ -49,6 +49,49 @@ export interface SfxNoiseOptions {
   readonly type?: NoiseType
 }
 
+export interface HelperVariationOptions {
+  readonly seed?: number
+  readonly variation?: number
+}
+
+export interface GunshotOptions extends HelperVariationOptions {
+  readonly caliber?: 'light' | 'medium' | 'heavy'
+  readonly suppressed?: boolean
+  readonly tailMs?: number
+}
+
+export interface ExplosionOptions extends HelperVariationOptions {
+  readonly size?: 'small' | 'medium' | 'large'
+  readonly distance?: number
+}
+
+export interface CoinPickupOptions extends HelperVariationOptions {
+  readonly pitch?: number
+  readonly brightness?: number
+}
+
+export interface LaserShotOptions extends HelperVariationOptions {
+  readonly pitch?: number
+  readonly sweep?: 'up' | 'down' | 'none'
+}
+
+export interface JumpOptions extends HelperVariationOptions {
+  readonly character?: 'light' | 'medium' | 'heavy'
+}
+
+export interface HitOptions extends HelperVariationOptions {
+  readonly material?: 'flesh' | 'wood' | 'metal' | 'stone'
+  readonly impact?: 'soft' | 'hard'
+}
+
+export interface FootstepOptions extends HelperVariationOptions {
+  readonly surface?: 'grass' | 'wood' | 'stone' | 'metal' | 'water'
+}
+
+export interface PowerUpOptions extends HelperVariationOptions {
+  readonly style?: 'arcade' | 'modern' | 'magical'
+}
+
 export interface GainOptions {
   readonly db: number
 }

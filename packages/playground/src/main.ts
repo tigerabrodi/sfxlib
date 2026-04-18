@@ -8,6 +8,9 @@ import {
   Sfx,
   type NoiseType,
 } from '../../sfx/src/index'
+import { mountHelperLab } from './helperLab'
+
+type PrimitiveName = 'noise' | 'saw' | 'sine' | 'square' | 'triangle'
 
 const app = document.querySelector<HTMLDivElement>('#app')
 
@@ -72,14 +75,49 @@ style.textContent = `
     font: inherit;
   }
 
-  .primitive-grid {
+  .control input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    accent-color: rgb(56, 189, 248);
+  }
+
+  .primitive-grid,
+  .helper-actions {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 12px;
     margin-top: 20px;
   }
 
-  .primitive-button {
+  .helper-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  .helper-card {
+    display: grid;
+    gap: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 18px;
+    padding: 18px;
+    background:
+      linear-gradient(180deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.8));
+  }
+
+  .helper-card h3 {
+    margin: 0;
+    font-size: 16px;
+  }
+
+  .helper-card p {
+    font-size: 14px;
+  }
+
+  .primitive-button,
+  .helper-button {
     border: 0;
     border-radius: 14px;
     padding: 16px 14px;
@@ -96,16 +134,24 @@ style.textContent = `
     box-shadow: 0 16px 28px rgba(14, 165, 233, 0.2);
   }
 
-  .primitive-button:hover {
+  .primitive-button:hover,
+  .helper-button:hover {
     transform: translateY(-1px);
     box-shadow: 0 18px 30px rgba(14, 165, 233, 0.26);
   }
 
-  .primitive-button:active {
+  .primitive-button:active,
+  .helper-button:active {
     transform: translateY(0);
   }
 
   .primitive-button[data-primitive="noise"] {
+    background:
+      linear-gradient(135deg, rgba(251, 191, 36, 0.96), rgba(249, 115, 22, 0.78));
+    box-shadow: 0 16px 28px rgba(249, 115, 22, 0.22);
+  }
+
+  .helper-button[data-action="burst"] {
     background:
       linear-gradient(135deg, rgba(251, 191, 36, 0.96), rgba(249, 115, 22, 0.78));
     box-shadow: 0 16px 28px rgba(249, 115, 22, 0.22);
@@ -171,6 +217,21 @@ app.insertAdjacentHTML(
         </div>
         <p id="status" class="status">Ready.</p>
       </section>
+      <section class="playground-card">
+        <h2>Game helper lab</h2>
+        <p>Leave helper seed blank for sibling takes. Set a seed if you want a reproducible pool.</p>
+        <div class="control-grid">
+          <div class="control">
+            <label for="helper-variation">Helper variation</label>
+            <input id="helper-variation" type="number" min="0" max="1" step="0.1" value="0.5" />
+          </div>
+          <div class="control">
+            <label for="helper-seed">Helper seed</label>
+            <input id="helper-seed" type="number" step="1" placeholder="blank = fresh family" />
+          </div>
+        </div>
+        <div id="helper-grid" class="helper-grid"></div>
+      </section>
     </div>
   `
 )
@@ -180,12 +241,16 @@ const durationInput = document.querySelector<HTMLInputElement>('#duration')
 const sampleRateInput = document.querySelector<HTMLInputElement>('#sample-rate')
 const noiseTypeInput = document.querySelector<HTMLSelectElement>('#noise-type')
 const seedInput = document.querySelector<HTMLInputElement>('#seed')
+const helperVariationInput =
+  document.querySelector<HTMLInputElement>('#helper-variation')
+const helperSeedInput = document.querySelector<HTMLInputElement>('#helper-seed')
+const helperGrid = document.querySelector<HTMLDivElement>('#helper-grid')
 const sequenceButton =
   document.querySelector<HTMLButtonElement>('#play-sequence')
 const laserButton = document.querySelector<HTMLButtonElement>('#play-laser')
 const boomButton = document.querySelector<HTMLButtonElement>('#play-boom')
 const status = document.querySelector<HTMLParagraphElement>('#status')
-const buttons = Array.from(
+const primitiveButtons = Array.from(
   document.querySelectorAll<HTMLButtonElement>('[data-primitive]')
 )
 
@@ -195,6 +260,9 @@ if (
   sampleRateInput === null ||
   noiseTypeInput === null ||
   seedInput === null ||
+  helperVariationInput === null ||
+  helperSeedInput === null ||
+  helperGrid === null ||
   sequenceButton === null ||
   laserButton === null ||
   boomButton === null ||
@@ -243,7 +311,7 @@ const playSfx = async (sfx: Sfx): Promise<void> => {
   source.start()
 }
 
-const createPrimitive = (primitive: string): Sfx => {
+const createPrimitive = (primitive: PrimitiveName): Sfx => {
   const durationMs = readRequiredNumber(durationInput)
   const sampleRate = readRequiredNumber(sampleRateInput)
 
@@ -269,9 +337,9 @@ const createPrimitive = (primitive: string): Sfx => {
       return saw({ freq, durationMs, sampleRate })
     case 'triangle':
       return triangle({ freq, durationMs, sampleRate })
-    default:
-      throw new Error(`Unknown primitive ${primitive}`)
   }
+
+  throw new Error('Unknown primitive')
 }
 
 const createTransformSequence = (): Sfx => {
@@ -342,9 +410,9 @@ const createLayeredBoom = (): Sfx => {
     })
 }
 
-for (const button of buttons) {
+for (const button of primitiveButtons) {
   button.addEventListener('click', async () => {
-    const primitive = button.dataset.primitive
+    const primitive = button.dataset.primitive as PrimitiveName | undefined
 
     if (primitive === undefined) {
       return
@@ -353,9 +421,7 @@ for (const button of buttons) {
     try {
       status.textContent = `Rendering ${primitive}.`
 
-      const sfx = createPrimitive(primitive)
-
-      await playSfx(sfx)
+      await playSfx(createPrimitive(primitive))
 
       status.textContent =
         primitive === 'noise'
@@ -372,9 +438,7 @@ sequenceButton.addEventListener('click', async () => {
   try {
     status.textContent = 'Rendering transform sequence.'
 
-    const sfx = createTransformSequence()
-
-    await playSfx(sfx)
+    await playSfx(createTransformSequence())
 
     status.textContent = 'Played beep. pause. reverse beep.'
   } catch (error) {
@@ -387,9 +451,7 @@ laserButton.addEventListener('click', async () => {
   try {
     status.textContent = 'Rendering laser chain.'
 
-    const sfx = createLaserChain()
-
-    await playSfx(sfx)
+    await playSfx(createLaserChain())
 
     status.textContent = 'Played the laser chain.'
   } catch (error) {
@@ -402,13 +464,21 @@ boomButton.addEventListener('click', async () => {
   try {
     status.textContent = 'Rendering layered boom.'
 
-    const sfx = createLayeredBoom()
-
-    await playSfx(sfx)
+    await playSfx(createLayeredBoom())
 
     status.textContent = 'Played layered boom.'
   } catch (error) {
     status.textContent =
       error instanceof Error ? error.message : 'Something went wrong.'
   }
+})
+
+mountHelperLab({
+  container: helperGrid,
+  playSfx,
+  readOptionalNumber,
+  readRequiredNumber,
+  seedInput: helperSeedInput,
+  status,
+  variationInput: helperVariationInput,
 })
