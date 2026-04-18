@@ -22,3 +22,14 @@ export interface CreateOfflineContextOptions {
 export interface SfxFromBufferOptions {
   readonly buffer: AudioBuffer
 }
+
+export interface SfxFromChannelsOptions {
+  readonly channels: Array<Float32Array>
+  readonly sampleRate?: number
+}
+
+export interface SfxSilenceOptions {
+  readonly durationMs: number
+  readonly sampleRate?: number
+  readonly channels?: number
+}

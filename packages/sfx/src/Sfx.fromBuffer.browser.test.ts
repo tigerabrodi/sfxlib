@@ -38,15 +38,15 @@ describe('Sfx.fromBuffer', () => {
     const sfx = Sfx.fromBuffer({ buffer })
     const durationDescriptor = Object.getOwnPropertyDescriptor(
       Sfx.prototype,
-      'duration',
+      'duration'
     )
     const sampleRateDescriptor = Object.getOwnPropertyDescriptor(
       Sfx.prototype,
-      'sampleRate',
+      'sampleRate'
     )
     const channelsDescriptor = Object.getOwnPropertyDescriptor(
       Sfx.prototype,
-      'channels',
+      'channels'
     )
 
     expect(Object.isFrozen(sfx)).toBe(true)

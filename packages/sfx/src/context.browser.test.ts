@@ -20,7 +20,7 @@ describe('context helpers', () => {
     await Promise.all(
       contextsToClose
         .filter((context) => context.state !== 'closed')
-        .map((context) => context.close()),
+        .map((context) => context.close())
     )
   })
 

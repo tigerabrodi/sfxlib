@@ -1,5 +1,11 @@
-import { configure } from './context'
-import type { ConfigureOptions, SfxFromBufferOptions } from './types'
+import { configure, getSharedContext } from './context'
+import { msToSamples } from './utils'
+import type {
+  ConfigureOptions,
+  SfxFromBufferOptions,
+  SfxFromChannelsOptions,
+  SfxSilenceOptions,
+} from './types'
 
 interface SfxOptions {
   readonly bufferPromise: Promise<AudioBuffer>
@@ -39,6 +45,36 @@ export class Sfx {
       sampleRate: buffer.sampleRate,
       channels: buffer.numberOfChannels,
     })
+  }
+
+  static fromChannels({
+    channels,
+    sampleRate = getSharedContext().sampleRate,
+  }: SfxFromChannelsOptions): Sfx {
+    const channelCount = channels.length
+    const length = channels[0]?.length ?? 0
+    const buffer = getSharedContext().createBuffer(
+      channelCount,
+      length,
+      sampleRate
+    )
+
+    for (const [channelIndex, samples] of channels.entries()) {
+      buffer.getChannelData(channelIndex).set(samples)
+    }
+
+    return Sfx.fromBuffer({ buffer })
+  }
+
+  static silence({
+    durationMs,
+    sampleRate = getSharedContext().sampleRate,
+    channels = 1,
+  }: SfxSilenceOptions): Sfx {
+    const length = Math.max(1, msToSamples(durationMs, sampleRate))
+    const buffer = getSharedContext().createBuffer(channels, length, sampleRate)
+
+    return Sfx.fromBuffer({ buffer })
   }
 
   get duration(): number {
